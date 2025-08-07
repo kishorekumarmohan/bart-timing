@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BART Timings</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        font-size: 24px;
+        margin-bottom: 20px;
+      }
+      h2 {
+        font-size: 20px;
+        margin-bottom: 10px;
+      }
+      .green {
+        color: green;
+      }
+      .blue {
+        color: blue;
+      }
+      .etd-box {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      ul {
+        font-size: 14px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>BART Timings</h1>
+    <section>
+      <h2 class="green">Dublin/Pleasanton → Embarcadero</h2>
+      <div id="dublin"></div>
+    </section>
+    <section>
+      <h2 class="blue">Embarcadero → Dublin/Pleasanton</h2>
+      <div id="embarcadero"></div>
+    </section>
+
+    <script>
+     async function fetchETD(station, destination, containerId) {
+  try {
+    const res = await fetch(
+      `https://api.bart.gov/api/etd.aspx?cmd=etd&orig=${station}&key=MW9S-E7SL-26DU-VV8V&json=y`
+    );
+    const data = await res.json();
+    const stations = data.root.station || [];
+    if (!stations.length) {
+      console.warn("No stations found for", station);
+      return;
+    }
+    const etdList = stations[0].etd || [];
+
+    // For debugging:
+    console.log(`ETDs for station ${station}:`, etdList);
+
+    const filtered = etdList.filter((etd) => etd.destination === destination);
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = ""; // Clear previous content
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<p>No upcoming trains to ${destination}</p>`;
+      return;
+    }
+
+    filtered.forEach((etd) => {
+      const div = document.createElement("div");
+      div.className = "etd-box";
+      div.innerHTML = `<h3>${etd.destination}</h3><ul>${etd.estimate
+        .map(
+          (est) =>
+            `<li>${
+              est.minutes === "Leaving" ? "Leaving now" : `${est.minutes} min`
+            } (${est.length} cars)</li>`
+        )
+        .join("")}</ul>`;
+      container.appendChild(div);
+    });
+  } catch (error) {
+    console.error("Fetch error:", error);
+    const container = document.getElementById(containerId);
+    container.innerHTML = "<p>Error fetching data.</p>";
+  }
+}
+
+
+      fetchETD("DUBL", "Embarcadero", "dublin");
+      fetchETD("EMBR", "Dublin/Pleasanton", "embarcadero");
+    </script>
+  </body>
+</html>
